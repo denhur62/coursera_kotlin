@@ -6,14 +6,12 @@ fun List<Int>.sum(list: List<Int>): Int {
     return result
 }
 fun main() {
-    println(listOf('a', 'b', 'c').joinToString(
-        separator = "", prefix = "(", postfix = ")"))
+    println(listOf('a', 'b', 'c').joinToString(separator = "", prefix = "(", postfix = ")"))
     for (ch in "abc") {
         print(ch + 1)
     }
     println("Kotlin" in "Java".."Scala")        //true  범위로 알아낼수 있다.
     println("Kotlin" in setOf("Java", "Scala"))     //리스트안에 존재하는 여부를 물어보는것
-
     val chapter2_1=CheckingIdentifier()
     println(chapter2_1.isValidIdentifier("name"))   // true
     println(chapter2_1.isValidIdentifier("_name"))  // true
@@ -28,4 +26,17 @@ fun main() {
     println( evaluateGuess("BCDF", "ACEB").equals(result))
     println(evaluateGuess("AAAF", "ABCA").equals(result))
     println(evaluateGuess("ABCA", "AAAF").equals(result))
+
+    val s1: String? = null
+    val s2: String? = ""
+    s1.isNullOrEmpty()
+    s1?.isEmptyOrNull()
+    s2?.isEmptyOrNull()
+    val s3 = "   "
+    s3.isEmptyOrNull()
+
+    val s="abc"
+    println(s as? Int)
+    println(s as Int?)
 }
+fun String?.isEmptyOrNull(): Boolean = this == null || this.isEmpty()
