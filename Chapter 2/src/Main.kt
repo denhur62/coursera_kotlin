@@ -81,6 +81,8 @@ fun main() {
     fun isEven(i:Int):Boolean = i % 2 == 0
     val predicate = ::isEven
     println(predicate(4))
+    val qwe :String="abce"
+
 }
 
 fun String?.isEmptyOrNull(): Boolean = this == null || this.isEmpty()
