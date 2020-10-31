@@ -377,3 +377,67 @@ Kotlin In Action 의 저자가 가르키는 코틀린 중급 문법 및 과제 ,
 >
 >   (Kotlin이 return을 fun 키워드 기준으로 대응시키는 규칙 때문)
 
+#### Properties
+
+>Kotlin은 properties를 기능으로써 지원하여 문법적으로 간결하게 사용할 수 있다.
+>
+>Kotlin에서 클래스를 정의할 때 클래스 내부에 변수를 val로 정의하면 Read-only property (getter)가, var
+>
+>로 정의하면 Mutable property (getter/setter)가 자동으로 생성된다.
+>
+>Kotlin에서는 field 정의시 자동으로 accessor가 구현되어 클래스 외부에서는 field에 직접적으로 접근할 수 
+>
+>없도록 한다. `<객체명>.<필드명>` 형태로 접근하더라도 Kotlin 컴파일러가 자동으로 getter/setter로 변환
+>
+>한다. 하지만 클래스 내부의 accessor에서 `field` 키워드를 사용한 경우에는 field에 직접적인 접근이 가
+>
+>능하다. (아래 코드 참고) 또한, 클래스 내부 메소드에서 `<객체명>.<필드명>` 형태로 접근한 경우 accesso
+>
+>r를 커스터마이징한 경우 accessor로 (ex: `this.setState()`), 커스터마이징 하지 않은 경우 field로 (ex: 
+>
+>`this.state`) Kotlin 컴파일러가 선택적으로 변환합니다.
+>
+>```kotlin
+>class StateLogger {
+>    var state = false
+>        set(value) {
+>            // accessor 내부에서 field 키워드로 접근시 Java코드상에서 
+>            // this.state가 호출된다. 
+>            println("state has changed: $field -> $value")
+>            field = value
+>        }
+>    
+>    fun printState(){
+>        // 클래스 내부 메소드에서 field에 접근시 
+>        // getter는 커스터마이징하지 않았으므로, this.state가 호출된다.               
+>       println("$state")
+>    }
+>fun setOppositeState(bool: Boolean){
+>         // setter는 커스터마이징 했으므로, this.setState()가 호출된다. 
+>        state = !bool
+>    }
+>}
+>```
+>
+>val은 엄밀히 따지면 read-only (reassign이 안됨) 를 뜻하는 것이며, immutable한 것은 아니다. 
+>
+>val로 선언한 properties는 mutable(unstable) 할 수 있다.
+>
+>getter 호출시마다 값이 달라지는 사례 : Random 함수를 쓰는 경우, 
+>
+>getter 내부에 field의 값을 변경시키는 로직을 넣는 경우
+
+## More about properties
+
+>Interface에도 Property를 정의할 수 있는데, 이는 컴파일시에 구현되지 않은 accessor 메소드
+>
+>(val의 경우 getter only, var의 경우 getter&setter)들로 변환된다.
+>
+>interface smart casts 기능이 동작하지 않는 3가지 상황이 존재한다. 
+>
+>1) interface 타입인 properties의 getter를 커스터마이징한 경우, 위 *Unstable val 실습 코드 작성시 고려할 점* 에서 살펴본 것처럼 getter 호출시마다 값이 mutable할 수 있는데 이 경우 타입 체크를 했더라도 다시 호출할 경우 다른 구현 class 타입이 반환될 가능성이 있으므로 동일 타입을 보장할 수 없습니다. 
+>
+>2) interface 에서 interface 타입 properties를 정의한 경우 해당 properties의 accessor 메소드는 open이며 재정의 과정에서 getter가 커스터마이징되어 1)과 동일한 이슈가 발생할 수 있습니다. 
+>
+>3) interface 타입 properties를 mutable로 선언한 경우 setter를 통해 값이 변경될 가능성이 있습니다. (아래 코드 참고) 이 경우에 대한 방안은 local variable에 getter 메소드 반환 값을 저장하여 사용하는 것입니다.
+
