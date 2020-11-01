@@ -385,11 +385,69 @@ Kotlin In Action 의 저자가 가르키는 코틀린 중급 문법 및 과제 ,
 >
 >로 정의하면 Mutable property (getter/setter)가 자동으로 생성된다.
 >
+>자바에서는 데이터를 **필드(field)**에 저장한다. `name`과 `isMarried`라는 데이터를 Person클래스의 필드에 저장한 것이다. 한편 각 데이터마다 적용되는 getter와 setter를 **접근자**라 부른다. 이 접근자를 통해서 가시성이 private인 데이터들에 접근할 수 있다.
+>
+>Kotlin 에서는 필드와 접근자를 통틀어서 **프로퍼티** 라고 부른다. 
+>
+>##### 주의할 점
+>
+>>디컴파일한 자바 코드에서 필드가 private이라고 하여 코틀린의 프로퍼티도 private은 아니다. 이게 무슨말인가 싶겠지만, **필드와 프로퍼티를 다르게 인식할 줄 알아야 한다.** 
+>>
+>>자바는 기본적으로 필드로 다루고, 코틀린은 프로퍼티(필드 + 접근자)를 기본으로 다루는 언어다.
+>>
+>>만일 프로퍼티가 private 이기 위해서는 
+>>
+>>```kotlin
+>>class Person(private var name: String)
+>>```
+>>
+>>를 디컴파일 자바코드로 보게 되면 
+>>
+>>```kotlin
+>>public final class Property {
+>>   private String name;
+>>
+>>   public Property(@NotNull String name) {
+>>      Intrinsics.checkParameterIsNotNull(name, "name");
+>>      super();
+>>      this.name = name;
+>>   }
+>>}
+>>```
+>>
+>>getter와 setter가 없어서 프로퍼티가 private이라고 볼 수 있다.
+>
+>#### Backing Fields
+>
+>>getter 와 setter를 생략하지 않고 선언하는 방법은 커스텀 접근자를 작성 할 때 backing Field를 사용 할 수 있다.
+>>
+>>```kotlin
+>>class person(){
+>>    var id=0
+>>    get()=100
+>>    var name= "suzuki"
+>>    set(value){name=value}
+>>}
+>>```
+>>
+>>코드가 무난 한 것 같지만 디 컴파일을 해보면 this.setName(value)로 나오는 것을 보고 무한루프를 도는 것을 알 수 있다. 따라서 위의 코드를
+>>
+>>```kotlin
+>>class person(){
+>>    var id=0
+>>    get()=100
+>>    var name= "suzuki"
+>>    set(value){field=value}
+>>}
+>>```
+>>
+>>backing Field를 사용하여 set함수를 적용한다. 
+>
 >Kotlin에서는 field 정의시 자동으로 accessor가 구현되어 클래스 외부에서는 field에 직접적으로 접근할 수 
 >
->없도록 한다. `<객체명>.<필드명>` 형태로 접근하더라도 Kotlin 컴파일러가 자동으로 getter/setter로 변환
+>없도록 한다. `<객체명>.<필드명>` 형태로 접근하더라도 Kotlin 컴파일러가 **자동으로 getter/setter로 변환**
 >
->한다. 하지만 클래스 내부의 accessor에서 `field` 키워드를 사용한 경우에는 field에 직접적인 접근이 가
+>**한다**. 하지만 클래스 내부의 accessor에서 `field` 키워드를 사용한 경우에는 field에 직접적인 접근이 가
 >
 >능하다. (아래 코드 참고) 또한, 클래스 내부 메소드에서 `<객체명>.<필드명>` 형태로 접근한 경우 accesso
 >
@@ -399,23 +457,23 @@ Kotlin In Action 의 저자가 가르키는 코틀린 중급 문법 및 과제 ,
 >
 >```kotlin
 >class StateLogger {
->    var state = false
->        set(value) {
->            // accessor 내부에서 field 키워드로 접근시 Java코드상에서 
->            // this.state가 호출된다. 
->            println("state has changed: $field -> $value")
->            field = value
->        }
->    
->    fun printState(){
->        // 클래스 내부 메소드에서 field에 접근시 
->        // getter는 커스터마이징하지 않았으므로, this.state가 호출된다.               
->       println("$state")
->    }
+>var state = false
+>   set(value) {
+>       // accessor 내부에서 field 키워드로 접근시 Java코드상에서 
+>       // this.state가 호출된다. 
+>       println("state has changed: $field -> $value")
+>       field = value
+>   }
+>
+>fun printState(){
+>   // 클래스 내부 메소드에서 field에 접근시 
+>   // getter는 커스터마이징하지 않았으므로, this.state가 호출된다.               
+>  println("$state")
+>}
 >fun setOppositeState(bool: Boolean){
->         // setter는 커스터마이징 했으므로, this.setState()가 호출된다. 
->        state = !bool
->    }
+>    // setter는 커스터마이징 했으므로, this.setState()가 호출된다. 
+>   state = !bool
+>}
 >}
 >```
 >
@@ -435,9 +493,142 @@ Kotlin In Action 의 저자가 가르키는 코틀린 중급 문법 및 과제 ,
 >
 >interface smart casts 기능이 동작하지 않는 3가지 상황이 존재한다. 
 >
->1) interface 타입인 properties의 getter를 커스터마이징한 경우, 위 *Unstable val 실습 코드 작성시 고려할 점* 에서 살펴본 것처럼 getter 호출시마다 값이 mutable할 수 있는데 이 경우 타입 체크를 했더라도 다시 호출할 경우 다른 구현 class 타입이 반환될 가능성이 있으므로 동일 타입을 보장할 수 없습니다. 
+>1) interface 타입인 properties의 getter를 커스터마이징한 경우, 위 *Unstable val 실습 코드 작성시 고려할 점* 에서 살펴본 것처럼 getter 호출시마다 값이 mutable할 수 있는데 이 경우 타입 체크를 했더라도 다시 호출할 경우 다른 구현 class 타입이 반환될 가능성이 있으므로 동일 타입을 보장할 수 없다. 
 >
->2) interface 에서 interface 타입 properties를 정의한 경우 해당 properties의 accessor 메소드는 open이며 재정의 과정에서 getter가 커스터마이징되어 1)과 동일한 이슈가 발생할 수 있습니다. 
+>2) interface 에서 interface 타입 properties를 정의한 경우 해당 properties의 accessor 메소드는 open이며 재정의 과정에서 getter가 커스터마이징되어 1)과 동일한 이슈가 발생할 수 있다. 
 >
->3) interface 타입 properties를 mutable로 선언한 경우 setter를 통해 값이 변경될 가능성이 있습니다. (아래 코드 참고) 이 경우에 대한 방안은 local variable에 getter 메소드 반환 값을 저장하여 사용하는 것입니다.
+>3) interface 타입 properties를 mutable로 선언한 경우 setter를 통해 값이 변경될 가능성이 있다. (아래 코드 참고) 이 경우에 대한 방안은 local variable에 getter 메소드 반환 값을 저장하여 사용하는 것이다.
+>
+>```kotlin
+>// 아래에 정의한 User interface를 properties로 사용하는 경우 
+>interface User {
+>val nickname: String
+>}
+>// 1. Interface 타입의 property의 getter를 커스텀한 경우 
+>class SessionI{
+>val user: User
+>   get(){
+>       return TODO()
+>   }
+>}
+>// 2. Interface에서 Interface 타입 property를 정의한 경우 
+>interface SessionII{
+>val user: User 
+>}
+>// 3. Interface 타입의 property를 mutable(var)로 선언한 경우 
+>class SessionIII(var user:User)
+>
+>fun analyzeUserSession(session: Session, sessionII: SessionII, sessionIII: SessionIII){
+>/*
+>아래 println 두줄 모두 is a property that has open or custom getter      메시지와 함께 오류가 뜸
+>*/
+>if(session.user is FacebookUser){
+>   println(session.user.accountId)  
+>}
+>if(sessionII.user is FacebookUser){
+>   println(sessionII.user.accountId)
+>}
+>
+>//아래 println 의 경우 is a mutable property that could have been changed by this 		time 메시지와 함께 오류가 뜸
+>
+>if(sessionIII.user is Facebookuser){
+>   println(sessionIII.user.accountId)
+>}
+>// 아래처럼 local variable에 getter의 값을 저장하는 경우 smart casts 동작
+>val userI = session.user
+>if (userI is FacebookUser) { println(userI.accountId) }
+>val userII = sessionII.user
+>if (userII is FacebookUser) { println(userII.accountId) }
+>val userIII = sessionIII.user
+>if (userIII is FacebookUser) { println(userIII.accountId) }
+>}
+>```
+>
+>```kotlin
+>interface User {
+>    val nickname: String
+>}
+>// 1번. 주 생성자 안에 프로퍼티를 직접 선언함
+>class PrivateUser(override val nickname: String) : User
+>
+>// 2번. 커스텀 게터로 프로퍼티를 설정함.
+>class SubscribingUser(val email: String) : User {
+>    override val nickname: String
+>        get() = email.substringBefore('@')
+>}
+>
+>// 3번. 초기화 식으로 프로퍼티 값을 설정함.
+>class FacebookUser(val accountId: Int) : User {
+>    override val nickname = getFacebookName(accountId)
+>}
+>```
+>
+>여기서 2번 SubsribingUser와 3번 FacebookUser를 구현하는 방법의 차이에 주의해야 한다. 
+>
+>SubscribingUser의 nickname 프로퍼티는 매번 호출될때마다 substringBefore를 호출하여 계산하는 커스텀 게터를 활용한다.
+>
+>이와 다르게 FacebookUser의 nickname 프로퍼티는 객체를 초기화할 때 계산한 데이터를 뒷받침하는 필드(backing fields)에 저장했다가 불러오는 방식을 활용한다.
 
+#### **Extension properties** 
+
+>확장 함수는 해당 클래스에 대해 빈번히 사용되는 연산 작업이며, 확장 프로퍼티는 해당 클래스에 대해 빈번히 사용되는 정보와 속성을 저장한다.
+>
+>```kotlin
+>// 특정 String 타입 객체의 마지막 index값을 반환하는 lastIndex 확장프로퍼티 
+>val String.lastIndex : Int
+>    get() = this.length - 1
+>// 특정 StringBuilder 타입 객체의 마지막 글자를 반환하고, 마지막 글자를 재할당할 수 // 있는 lastChar 확장 프로퍼티
+>var StringBuilder.lastChar: Char
+>    get() = get(this.length - 1)
+>    set(value: Char){
+>        this.setCharAt(length-1, value)
+>    }
+>```
+
+## Lazy or late initialization
+
+>Kotlin에서는 `by lazy` 키워드를 통해 Lazy Properties를 정의할 수 있다.
+>
+>1) lambda를 run 통해 실행시키는 경우 변수 호출 여부와 무관하게 무조건 연산을 수행하여 반환 값을
+>
+>​	 저장한다. ( 부르지 않아도 실행)
+>
+>2) property의 경우 호출되기 전까지는 실행되지 않지만, 호출 시마다 매번 연산이 수행된다. 
+>
+>3) lazy property의 경우 호출되기 전까지는 실행되지 않으며, 최초 1회 호출시에만 연산이 수행되고 반환 값을 저장한다.
+>
+>```kotlin
+>// 1. lambda를 run을 통해 실행시키는 경우
+>val ValueI : String = run {
+>println("computed! - run lambda")
+>"Hello"
+>}
+>// 2. property를 사용하는 경우 
+>val ValueII : String
+>get() {
+>   println("computed! - property")
+>   return "Hello"
+>}
+>// 3. lazy property를 사용하는 경우
+>val ValueIII : String by lazy {
+>println("computed! - lazy property")
+>"Hello"
+>}
+>```
+
+**Late initialization**
+
+>- 특정한 목적에 따라 Property를 클래스 생성자 (Constructor)가 아니라 특정한 다른 지점에서 초기화해야 하는 상황에 유용한 기능이다. 사용되는 예시로 안드로이드 액티비티, JUnit 테스트, 의존성 주입 등이 있다. (관련 링크 : [Medium 블로그](https://medium.com/til-kotlin-ko/kotlin-delegated-property-by-lazy는-어떻게-동작하는가-74912d3e9c56) 중 lateinit 부분)
+>- 이러한 상황에 대한 Java 대응 방식은 생성자에서 우선 null로 초기화했다가 추후 특정 지점에서 다시 재할당하는 방식이다. 하지만 이 경우 해당 변수를 Nullable type으로 선언해야 하며 이로인해 이 변수를 다루는 과정에서 계속 Nullability 관련 연산자를 사용해야 하는 비효율성이 발생한다. 이 경우 변수 앞에 `lateinit` 키워드를 써주면 Non-nullable 타입으로 처리할 수 있다.
+>- Late initialization은 사실 변수 선언시 null로 초기화했다가, 개발자가 실제로 유의미한 초기화를 하는 특정 지점에서 다시 재할당을 하는 방식으로 컴파일 된다. 이에 따라 `lateinit` 키워드는 `val` 키워드에는 사용할 수 없도록 언어적으로 제한되어 있다.
+>- Late initialization은 불필요한 Nullability 관련 코드를 제거해주는 목적의 문법이므로 `lateinit` 키워드로 선언된 변수는 Nullable type이 될 수 없도록 제한되어 있다. 또한 Primitive type (Int, Boolean, Char 등)의 경우 개발자가 구현하는 의도에 맞춘 디폴트 값을 주는 것이 가능하므로 (ex: 0, false, ‘’ 등) `lateinit` 키워드를 사용할 수없도록 제한되어 있습니다.
+>- `lateinit` 키워드로 선언된 변수의 초기화 여부를 `.isInitialized`를 통해 체크할 수 있다. 이는 컴파일 과정에서 null 여부를 확인하는 if 조건문으로 구현됩니다.
+>- 위와 같이 late initialization은 사실상 Java 방식과 동일하게 동작한다. 다만, 실용적 관점에서 클래스 생성자가 아닌 특정 지점에서만 변수 초기화가 가능하고, 실제로 해당 변수는 그 지점 이후에만 역참조되는 경우들이 있는데 (ex: 안드로이드 액티비티 onCreate) 이 때 단순 반복적인 코드를 Kotlin 컴파일러 레벨에서 자동으로 생성해주어 Kotlin 코드 간결성을 개선해 준다는 의미가 있다.
+
+#### lateinit 유의사항
+
+>late initialization은 앞서 배운 Non-null assertion (`!!` )과 유사하게 개발자가 해당 변수가 반드시 초기화 이후에 역참조될 것이라는 확신이 있을 때만 사용해야 하는 것으로, (ex: 안드로이드 액티비 onCreate) 초기화 전에 역참조가 발생할 경우 UninitializedPropertyAccessException 이라는 런타임 에러가 발생한다.
+>
+> 다만, NullPointerException과 달리 에러 문구에서 정확히 어떤 변수에서 문제가 발생했는지 명시적으로 알려주므로 오류 수정시 상대적으로 용이하다는 장점이 있다.
+>
+>
