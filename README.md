@@ -377,7 +377,7 @@ Kotlin In Action 의 저자가 가르키는 코틀린 중급 문법 및 과제 ,
 >
 >   (Kotlin이 return을 fun 키워드 기준으로 대응시키는 규칙 때문)
 
-#### Properties
+### Properties
 
 >Kotlin은 properties를 기능으로써 지원하여 문법적으로 간결하게 사용할 수 있다.
 >
@@ -585,7 +585,7 @@ Kotlin In Action 의 저자가 가르키는 코틀린 중급 문법 및 과제 ,
 >    }
 >```
 
-## Lazy or late initialization
+#### Lazy or late initialization
 
 >Kotlin에서는 `by lazy` 키워드를 통해 Lazy Properties를 정의할 수 있다.
 >
@@ -631,4 +631,171 @@ Kotlin In Action 의 저자가 가르키는 코틀린 중급 문법 및 과제 ,
 >
 > 다만, NullPointerException과 달리 에러 문구에서 정확히 어떤 변수에서 문제가 발생했는지 명시적으로 알려주므로 오류 수정시 상대적으로 용이하다는 장점이 있다.
 >
+
+#### OOP in Kotlin
+
+>Kotlin은 public, protected, internal, private의 4가지 수준이 존재하며, 디폴트는 public이다.
 >
+>```kotlin
+>class Person
+>internal constructor(name: String, age:Int){ //생성자에 대한 가시성을 변경하는 문법
+>    val name:String
+>    var age:Int
+>    init {
+>        this.name = name
+>        this.age = age
+>    }
+>    
+>    constructor(name: String, birthYear:Int, nowYear:Int) : this (name, nowYear-birthYear+1)
+>}
+>// 아래와 같이 상황에 따라 다른 매개변수 유형과 개수로 객체 생성 가능 
+>val person1 = Person("kevin", 28)
+>val person2 = Person("kevin", birthYear = 1992, nowYear = 2001)
+>```
+>
+>생성자 오버로딩 (생성자 매개변수의 유형과 개수를 다르게 하는 여러 생성자를 구현하는 것) 이 필요한 경우 클래스 내부에 `constructor` 를 통해 Secondary Constructor를 정의할 수 있다. 
+>
+>단, secondary constructor 는 반드시 Primary constructor 또는 다른 secondary constructor를 호출해야 한다.
+>
+>Java에서 상속관계인 클래스들의 생성자 호출 순서는 자식클래스 생성자 호출시 우선 부모클래스 생성자가 호출되며 부모클래스 생성자 내부 로직 실행 -> 자식 클래스 생성자 내부 로직 실행의 순서로 실행된다.
+
+#### Class modifiers — I, II
+
+>**Enum class**
+>
+>>- Enum은 Enumeration (목록)을 의미하며, Java와 동일하게 고정된 갯수의 값들로 구성된 목록이 필요할 때 사용한다.
+>>
+>>```kotlin
+>>import Color.*// 색상 목록의 각 색상 항목마다 서로 다른 r, g, b 속성 정보를 가짐 -> 프로퍼티로 구현
+>>enum class Color(val r:Int, val g:Int, val b:Int){
+>>    BLUE(0,0,255),
+>>    ORANGE(255,165,0),
+>>    RED(255,0,0); // 세미콜론을 통해 Enum list와 member list를 구분// 색상 목록의 각 색상 항목마다 rgb값을 구하는 연산이 필요 -> 메소드로 구현
+>>    fun rgb() = (r * 256 + g) * 256 + b
+>>}fun main(args: Array<String>){
+>>    println(BLUE.r)
+>>    println(BLUE.rgb())
+>>}
+>>```
+>>
+>>메소드는 목록의 각 항목에 대해 빈번하게 수행되는 연산이 있는 경우 유용하다.
+>
+>**data class**
+>
+>>Kotlin에서 `==`연산자는 컴파일 과정에서 `equals()` 메소드로 변환되며, `===` 연산자가 reference equality를 체크한다. 
+>>
+>>한편 개발자가 직접 구현하는 클래스의 경우 의도에 적합하도록 `equals()` 를 재정의해주어야 하는데 data class로 선언하는 경우 자동적으로 구성 요소가 모두 동일한지 비교하는 메소드를 생성해 준다.
+>
+>**Sealed class**
+>
+>>Sealed class는 고정된 상속 계층 구조를 가지는 클래스를 다룰 때 사용한다. 
+>>
+>>선언된 상속클래스 외에 다른 클래스가 없음을 보장하므로, Enum class 처럼 `when` expression 을 사용할 때 불필요한 `else` 분기를 만들지 않아도 되어 코드를 간결하게 만들 수 있다.
+>
+>**Inner/ nested class**
+>
+>>일반적인 유스케이스에서 내부에 선언된 클래스가 외부 클래스에 대한 역참조를 필요로 하지 않는 경우가 많고, 이 경우 불필요한 메모리 누수를 줄이기 위해 정적 중첩 클래스가 낫기 때문이다.
+>>
+>>물론 상황에 따라 해당하는 클래스를 사용하면 된다.
+
+#### **Class delegation**
+
+>인터페이스에 구현되지 않은 메소드들이 있고, 
+>
+>클래스에서 이 인터페이스를 프로퍼티로 사용할 경우 클래스 구현 과정에서 메소드를 구현할 필요 없이 추후 클래스 객체 생성시에 인자로 받을 인터페이스 구현체에게 메소드 구현을 위임할 수 있다. 
+>
+>```kotlin
+>interface Repository{
+>    fun getById(id: Int): Customer
+>    fun getAll() : List<Customer>
+>}interface Logger{
+>    fun logAll()
+>}class Controller(
+>    val repository: Repository, 
+>    val logger: Logger
+>) : Repository, Logger {
+>    override fun getById(id: Int): Customer = repository.getById(id)
+>    override fun getAll(): List<Customer> = repository.getAll()
+>    override fun logAll() = logger.logAll()
+>}
+>```
+>
+>위 코드 처럼 모든 위임 메소드 (delegating methods)를 직접 코딩하는 것은 번거로운 단순 작업이다. 이 경우에 대해 Kotlin은 Class delegation 을 지원하며 `by` 키워드를 사용하면 컴파일 과정에서 위임 메소드를 자동으로 생성해주어 코드를 간결하게 만들 수 있다.
+>
+>```kotlin
+>class Controller(
+>    val repository: Repository, 
+>    val logger: Logger
+>) : Repository by repository, Logger by logger
+>```
+>
+>위임 클래스를 통해 코드를 간결하게 만들수 있다. 
+
+#### Objects, object expressions & companion objects
+
+>`**object**` **키워드와 object declaration**
+>
+>>```kotlin
+>>// Java 코드에서 싱글톤 패턴 구현
+>>public class JSingleton {
+>>    public static final JSingleton INSTANCE = new JSingleton();
+>>    private JSingleton() { }
+>>    public void foo() { System.out.println("foo"); } 
+>>}
+>>// Java 싱글톤패턴 객체 멤버 호출 방법
+>>JSingleton.INSTANCE.foo();// 위와 동일하게 동작하는 Kotlin 코드 
+>>object KSingleton {
+>>    fun foo() { println("foo") }
+>>}
+>>// Kotlin 싱글톤 패턴 객체 멤버 호출 방법
+>>KSingleton.foo()
+>>```
+>>
+>>Java에서는 싱글톤 패턴을 사용하기 위해 관용적인 단순 코드 작성 작업이 필요하다.
+>>
+>>한편, Kotlin은 `object` 키워드를 쓰면 컴파일 과정에서 싱글톤 패턴을 위한 코드를 자동으로 생성해주고, 관용적인 `INSTANCE` 필드 호출을 생략해주어 코드 간결성을 높일 수 있다.
+>
+>**object expression**
+>
+>>Kotlin에서 구현할 인터페이스가 오직 1개의 추상 메소드 (abstract method)만 가질 경우 lambda로 구현할 수 있다. 
+>>
+>>인터페이스가 여러개의 추상 메소드를 가질 경우 object expression으로 구현할 수 있다.
+>>
+>>object expression도 `object :` 키워드를 사용하지만 이 때 생성되는 객체는 호출시마다 매번 새롭게 생성되며 앞선 싱글톤 패턴 (object declaration)과 무관하다.
+>>
+>>익명(이름없는) 오브젝트 (anonymous object) 는 local 과 private 선언에서만 type 으로써 사용될 수 있다.
+>>
+>>익명 오브젝트 (anonymous object) 를 public 함수의 리턴 타입으로 쓰거나 public property 의 타입으로 쓰면 둘의 실제 타입은 anonymous object 의 선언된 supertype 되거나, supertype 을 선언 안한 경우엔 **Any** 이 되게 된다.
+>>
+>>anonymous object 에 추가된 멤버들은 접근이 불가능 해 진다.
+>>
+>>```kotlin
+>>class C { 
+>>    // Private function, so the return type is the anonymous object type private
+>>    fun foo() = object { val x: String = "x" } 
+>>    // Public function, so the return type is Any
+>>    fun publicFoo() = object { val x: String = "x" } 
+>>    fun bar() { val x1 = foo().x // Works 
+>>               val x2 = publicFoo().x // ERROR: Unresolved reference 'x' } }
+>>
+>>
+>>```
+
+**No static keyword**
+
+>**@JvmStatic**
+>
+>> companion object를 통한 외부클래스 내부의 싱글톤 패턴 클래스는 사실
+>>
+>> `<외부 클래스명>.Companion.<멤버>` 를 Kotlin 컴파일러가 `<외부 클래스명>.<멤버>`로 간소화하여 
+>>
+>>사용할 수 있도록 하는 것이다. 
+>>
+>>따라서 해당 Kotlin 코드를 Java에서 사용할 경우 Kotlin 코드와 달리 `.INSTANCE` , `.Companion` 작성이 필요하다.
+>
+>## Constants
+>
+>>상수 (constants)로서 클래스 멤버 변수란 해당클래스에 대해 고정된 값을 가지는 속성을 의미합니다. (ex: 원주율) 상수는 각 객체에 종속되지 않고 동일한 값을 가져야 하며, 한번만 초기화 되어야 하므로 Java에서는 static과 fianl을 통해 구현합니다. 
+>>
+>>
+
