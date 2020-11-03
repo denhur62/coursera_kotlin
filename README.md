@@ -789,13 +789,35 @@ Kotlin In Action 의 저자가 가르키는 코틀린 중급 문법 및 과제 ,
 >>
 >> `<외부 클래스명>.Companion.<멤버>` 를 Kotlin 컴파일러가 `<외부 클래스명>.<멤버>`로 간소화하여 
 >>
->>사용할 수 있도록 하는 것이다. 
+>> 사용할 수 있도록 하는 것이다. 
 >>
->>따라서 해당 Kotlin 코드를 Java에서 사용할 경우 Kotlin 코드와 달리 `.INSTANCE` , `.Companion` 작성이 필요하다.
+>> 따라서 해당 Kotlin 코드를 Java에서 사용할 경우 Kotlin 코드와 달리 `.INSTANCE` , `.Companion` 작성이 필요하다.
+>>
+>> 이는 Java 상호운용성 측면에서 혼동의 여지가 있으며, object/companion object 내부의 멤버에 대해 `@JvmStatic` 어노테이션을 붙이면 Java에서도 Kotlin과 동일한 코드로 사용할 수 있다.
+>>
+>> 즉  `@JvmStatic`는 Companion에 등록된 변수를 자바의 static처럼 선언하기 위한 annotation이다.
 >
->## Constants
+>**Inner object (Inner modifier with object)**
 >
->>상수 (constants)로서 클래스 멤버 변수란 해당클래스에 대해 고정된 값을 가지는 속성을 의미합니다. (ex: 원주율) 상수는 각 객체에 종속되지 않고 동일한 값을 가져야 하며, 한번만 초기화 되어야 하므로 Java에서는 static과 fianl을 통해 구현합니다. 
+>>외부클래스 내부 object에 대해서는 `inner` 제어자를 사용할 수 없다. 
 >>
+>>왜냐하면 `inner` 제어자는 non-static nested class를 의미하는데, object는 싱글톤 패턴 클래스로 static 이어서 상충되기 때문이다.
+>
+>#### Constants
+>
+>>상수 (constants)로서 클래스 멤버 변수란 해당클래스에 대해 고정된 값을 가지는 속성을 의미한다.
 >>
+>> (ex: 원주율) 상수는 각 객체에 종속되지 않고 동일한 값을 가져야 하며, 한번만 초기화 되어야 하므로 Java에서는 static과 fianl을 통해 구현한다. 
+>>
+>>Kotlin 에서는 `const` 제어자 또는 `@JvmField` 어노테이션을 통해 상수를 구현한다. 
+>>
+>>`const` 제어자를 사용하면 컴파일 과정에서 상수 변수를 해당 값으로 치환하며 (단, Primitive type 또는 String에 대해서만 동작), 
+>>
+>>`@JvmField` 어노테이션을 사용하면 프로퍼티를 accessor를 통해서가 아니라 직접 필드에 접근할 수 있도록 하는 방식으로 mutability를 차단하여 상수를 구현한다.
+>
+>![image-20201103194200053](README.assets/image-20201103194200053.png)
+>
+>![image-20201103194213322](README.assets/image-20201103194213322.png)
+>
+>
 
