@@ -226,42 +226,43 @@ Kotlin In Action 의 저자가 가르키는 코틀린 중급 문법 및 과제 ,
 
 >- Map에서 key에 해당되는 value를 조회할 때 `map["key"]` 는 해당 key가 없는 경우 null을 반환하며, 
 >
->  map.getValue("key")` 는 해당 key가 없는 경우 NoSuchElementException을 반환하고, 
+> map.getValue("key")` 는 해당 key가 없는 경우 NoSuchElementException을 반환하고, 
 >
->  map.getOrElse("key") { }` 는 해당 key가 없는 경우 lambda로 정의된 argument를 디폴트값으로 
+> map.getOrElse("key") { }` 는 해당 key가 없는 경우 lambda로 정의된 argument를 디폴트값으로 
 >
->  하여 반환합니다.
+> 하여 반환합니다.
 >
->   (lambda 호출과 연산은 key가 없는 경우에만 진행되므로 불필요한 연산을 줄일 수 있습니다.)
+>  (lambda 호출과 연산은 key가 없는 경우에만 진행되므로 불필요한 연산을 줄일 수 있습니다.)
 >
 >- Lambda 속에 Lambda가 중첩되어 사용되거나, 여러 Collection operation 확장함수를 연달아 사용하여 
 >
->  Lambda가 여러번 사용될 때, it은 의미를 혼동하게할 가능성이 있으므로 인자를 명시적으로 네미밍하는
+> Lambda가 여러번 사용될 때, it은 의미를 혼동하게할 가능성이 있으므로 인자를 명시적으로 네미밍하는
 >
->   것을 장려합니다.
+>  것을 장려한다.
 >
 >- Collection operation은 매우 다양하며 동일한 연산을 위해 가장 간단하고 명확한 operation을 선택해야 
 >
->  합니다. 아래 2개 코드는 사실상 동일한 연산이지만 후자가 보다 명료합니다.
+> 합니다. 아래 2개 코드는 사실상 동일한 연산이지만 후자가 보다 명료하다.
 >
->  ```kotlin
->   val (first, second) = heroes
->          .flatMap { heroes.map { hero -> it to hero } }
->          .maxBy { it.first.age - it.second.age }!!
->  -> argument를 넣어 it을 확실하게 할 것
->   val allPossiblePairs = heroes
->       .flatMap { firstHero ->
->            heroes.map{
->                  secondHero -> firstHero to secondHero
->            }
->       }
->  val (oldest,youngest) = allPossiblePairs.maxBy{it.first.age-it.second.age}!!
->  //혹은 
->  val oldestHero = heroes.maxBy { it.age }
->  val youngestHero = heroes.minBy { it.age }
->  println(oldestHero?.name)
->          
->  ```
+> ```kotlin
+>  val (first, second) = heroes
+>         .flatMap { heroes.map { hero -> it to hero } }
+>         .maxBy { it.first.age - it.second.age }!!
+>
+>//  argument를 넣어 it을 확실하게 할 것
+>  val allPossiblePairs = heroes
+>      .flatMap { firstHero ->
+>           heroes.map{
+>                 secondHero -> firstHero to secondHero
+>           }
+>      }
+> val (oldest,youngest) = allPossiblePairs.maxBy{it.first.age-it.second.age}!!
+> //혹은 
+> val oldestHero = heroes.maxBy { it.age }
+> val youngestHero = heroes.minBy { it.age }
+> println(oldestHero?.name)
+>         
+> ```
 
 #### Function Types
 
@@ -738,14 +739,16 @@ Kotlin In Action 의 저자가 가르키는 코틀린 중급 문법 및 과제 ,
 >>```kotlin
 >>// Java 코드에서 싱글톤 패턴 구현
 >>public class JSingleton {
->>    public static final JSingleton INSTANCE = new JSingleton();
->>    private JSingleton() { }
->>    public void foo() { System.out.println("foo"); } 
+>>public static final JSingleton INSTANCE = new JSingleton();
+>>private JSingleton() { }
+>>public void foo() { System.out.println("foo"); } 
 >>}
 >>// Java 싱글톤패턴 객체 멤버 호출 방법
->>JSingleton.INSTANCE.foo();// 위와 동일하게 동작하는 Kotlin 코드 
+>>JSingleton.INSTANCE.foo();
+>>
+>>// 위와 동일하게 동작하는 Kotlin 코드 
 >>object KSingleton {
->>    fun foo() { println("foo") }
+>>fun foo() { println("foo") }
 >>}
 >>// Kotlin 싱글톤 패턴 객체 멤버 호출 방법
 >>KSingleton.foo()
@@ -820,4 +823,83 @@ Kotlin In Action 의 저자가 가르키는 코틀린 중급 문법 및 과제 ,
 >![image-20201103194213322](README.assets/image-20201103194213322.png)
 >
 >
+
+### Generics
+
+>JVM의 제네릭은 보통 타입 소거를 사용해 구현된다. 즉 실행 시점에 제네릭 클래스의 인스턴스에 타입 인자 정보가 들어있지 않다는 뜻이다.
+>
+>코틀린 타입 소거가 어떤 장점을 가지는지 살펴보고 함수를 `inline`으로 선언함으로써 이런 제약을 어떻게 피할 수 있는지 알 수 있다.. 함수를 `inline`으로 만들면 타입 인자가 지워지지 않게 할 수 있다 (실체화)
+>
+>이러한 제너릭이 타입인자 검사나 변환할 시에 error를 표출하지만 저장해야 하는 타입 정보의 크기가 줄어들어서 메모리 사용량이 줄어든다는 나름의 장점이 존재힌다. 
+>
+>어떤 값이 집합이나 맵이 아니라 리스트라는 사실을 확인하는 방법은 **스타 프로젝션**을 사용하면 된다.
+>
+>즉 리스트인지 Map,Set인지를 구분하려면 사용한다.
+>
+>
+>
+>하지만 타입 인자가 다른 타입으로 캐스팅해도 여전히 캐스팅에 성공하게 된다는 문제가 있다.
+>
+>`inline` 함수 안에서는 타입 인자를 사용하여 함수의 본문에서 그 함수의 타입 인자를 가르킬 수 있어서 이 문제를 해결할 수 있다.
+>
+>인라인 함수의 본문을 구현한 바이트코드를 그 함수가 호출되는 모든 지점에 삽입합니다. 컴파일러는 실체화한 타입 인자를 사용하여 인라인 함수를 호출하는 가 부분의 정확한 타입 인자를 알 수 있게 된다.
+>
+>inline 과 reified 를 같이 사용하여 런타임시에 타입 파라미터를 얻을 수 있다.
+>
+>```kotlin
+>//명시적으로 Class 파라미터 전달
+>fun <T : Any> String.toKotlinObject(c: KClass<T>): T {
+>  val mapper = jacksonObjectMapper()
+>  return mapper.readValue(this, c.java)
+>}
+>data class Foo(val name: String)
+>
+>val json = """{"name":"example"}"""
+>json.toKotlinObject(Foo::class)
+>// reified 사용
+>inline fun <reified T : Any> String.toKotlinObject(): T {
+>  val mapper = jacksonObjectMapper()
+>  return mapper.readValue(this, T::class.java)
+>}
+>json.toKotlinObject<Foo>()
+>```
+>
+>✅ 다음과 같은 경우엔 실체화한 타입 파라미터를 사용할 수 있다.
+>
+>- 타입 검사와 캐스팅 (`is`, `!is`, `as`, `as?`)
+>- 코틀린 리플렉션 API(`::class`)
+>- 코틀린 타입에 대응하는 java.lang.Class를 얻기(`::class.java`)
+>- 다른 함수를 호출할 때 타입 인자로 사용
+>
+>####  Non-Null Type parameter 설정
+>
+>>코틀린에서 타입의 기본은 Non null 입니다.
+>>
+>>다만 제너릭인 경우에만 기본값이 Nullable 이다.
+>>
+>>만약 null값을 허용하게 하지 않으려면 <T : Any>로 non-nullable로 설정하면 된다.
+
+####  Operator overloading
+
+>Kotlin의 Conventions 란 언어의 내재된 구조처럼 보이는 기능 (ex: 산술 이항/단항 연산자, 할당 연산자, 비교 연산자, `in` , `..` , iterator, destruction declaration 등)이 수행하는 역할을 메소드로 정의하므로써, 직접 구현한 클래스 또는 기존 클래스에 대해 이러한 기능을 오버로딩하여 사용할 수 있도록 하는 것이다. 
+>
+>이를 통해 빈번하게 사용되는 기능을 직관적이고 간결한 문법으로 사용할 수 있도록 한다.
+>
+>산술 연산자의 경우 `a + b` 는 `a.plus(b)` , `a — b` 는 `a.minus(b)` , `a * b`는 `a.times(b)` , `a / b` 는 `a.div(b)` , `a % b` 는 `a.mod(b)` 로 대응된다.
+>
+>단한 연산자의 경우 `+a` 는 `a.unaryPlus()` , `-a` 는 `a.unaryMinus()` , `!a`는 `a.not()` , `++a/a++` 는 `a.inc()` , `--a/a--` 는 `a.dec()` 로 대응된다.
+
+#### Conventions
+
+>비교 연산자의 경우 `a > b` 는 `a.compareTo(b)> 0`, `a < b` 는 `a.compareTo(b)< 0`,`a >= b` 는`a.compareTo(b)>= 0`, `a =< b` 는 `a.compareTo(b) <= 0`,`a == b. `는`a.equals(b)`로 대응된다.
+>
+>For 루프를 통해 Iterator를 구현하는 `for (c in a) { }` 는 `a.iterator()`에 대응된다. 
+>
+>Kotlin의 String이 Iterable 인터페이스를 구현하지 않은 Java.lang.String을 사용하면서도 이터레이트가 가능한 것은 이러한 구현 방식 때문이다.
+>
+>
+>
+>For 루프와 lambda에서 사용하는 destruction declaration 문법의 경우 `val (a, b) = p` 는 `val a = p.component1()` 과 `val b = p.component2()`대응된다. 
+>
+>data class의 경우 이 `component()` 메소드를 자동으로 생성하기 때문에 destruction declaration을 사용할 수 있다. 한편, destruction declaration 문법을 사용할 때 호출하지 않는 변수는 `_` 선언을 통해 사용되지 않음을 명시화할 수 있다.
 
