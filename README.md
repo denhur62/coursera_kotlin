@@ -1,4 +1,4 @@
-# coursera_kotlin
+coursera_kotlin
 
 Kotlin In Action 의 저자가 가르키는 코틀린 중급 문법 및 과제 , 실습을 다룬다.
 
@@ -202,25 +202,31 @@ Kotlin In Action 의 저자가 가르키는 코틀린 중급 문법 및 과제 ,
 >
 >- find, first, firstOrNull : 람다식에 해당하는 값 반환 , 첫번째 값 반환 , 만족하는게 없으면 null 반환 
 >
->  last,lastOrNull : 해당하는 마지막값 반환, 없으면 null 반환 
+> last,lastOrNull : 해당하는 마지막값 반환, 없으면 null 반환 
 >
 >- partition : Lambda로 정의된 predicate를 만족하는 원소들과, 만족하지 않는 원소들로 나누어 Pair of Collectoins를 반환. 상황에 따라 만족하지 않는 원소들도 필요한 경우 filter 대신 partition 사용.
 >
->  ```kotlin
->  val (youngest, oldest) = heroes.partition { it.age < 30 }
->  ```
+> ```kotlin
+> val (youngest, oldest) = heroes.partition { it.age < 30 }
+> ```
 >
->  
+> 
 >
 >- count: Lambda로 정의된 predicate를 만족하는 원소 개수를 반환.
 >
 >- groupBy : 람다식에 해당하는 값을 기준으로 원소나누어 Pair of Collectoins를 반환.
 >
->  associateBY는 람다식 결과값이 같은 중복값을 제거하고 Pair of Collections 값 반환  즉 unique 하지 않을 경우 가장 마지막 원소를 제외하고 지워짐.
+> associateBy는 람다식 결과값이 같은 중복값을 제거하고 Pair of Collections 값 반환  즉 unique 하지 않을 경우 가장 마지막 원소를 제외하고 지워짐.
 >
 >- predicate : boolean test(T) 메소드가 정의된 인터페이스로 T 타입 데이터에 대한 특정 조건 부합 여부를 확인하여 bool을 반환
 >
 >- distinct : 컬렉션에서 중복되는 원소를 제거하고 unique한 원소들만으로 구성된 Collection 으로 반환
+>
+>- windowed:  리스트나 스트링에서 입력값만큼 크기로 나눈값 제공
+>
+>  ex) str="abcdefg" str.windowed(4) => [abcd,bcde,cdef,defg] 
+>
+>- tomap[it.key].toset() 를 줄여서 .keys 로 쓸 수 있다.
 
 #### Operations Quiz 
 
