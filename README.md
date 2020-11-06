@@ -1135,7 +1135,7 @@ Kotlin In Action 의 저자가 가르키는 코틀린 중급 문법 및 과제 ,
 
 >Eager -> lazy 변경을 쉽게 하기 위해 Collection/Seqeunce에 대한 확장함수들은 대부분 매칭된다. 기존 Collection에 대한 chain calls 앞에 `asSequence()` 만 붙여주면 된다.
 >
->한편, Sequence에 대한 확장함수들은 **intermediate operation** (반환 타입이 sequence인 연산)과 **terminal operation** (반환 타입이 sequence가 아닌 연산)으로 나뉩니다.
+>한편, Sequence에 대한 확장함수들은 **intermediate operation** **(반환 타입이 sequence인 연산)**과 **terminal operation** **(반환 타입이 sequence가 아닌 연산)**으로 나뉩니다.
 >
 >```kotlin
 >// Sequence의 first() : terminal operation (inline함수로 정의됨)
@@ -1159,5 +1159,115 @@ Kotlin In Action 의 저자가 가르키는 코틀린 중급 문법 및 과제 ,
 >
 > 3) `yield` 
 >
+>#### generateSequence(nextFunction: () -> T?)
 >
+>>```kotlin
+>>val input = generateSequence { readLine().takeIf { it != "exit" } }
+>>println(input.toList())
+>>```
+>>
+>>위 방법의 경우 lambda로 정의된 nextFunction에 따라 무한히 반복하여 원소를 생성하며, nextFunction이 null을 반환할 때 종료 된다. 
+>>
+>>이를 사용하는 예로 위 코드처럼 특정한 String에 도달할 때 까지 input을 줄단위로 읽으며 sequence를 생성하는 경우가 있다.
+>
+>#### generateSequence(seed: T?, nextFunction: () -> T?)
+>
+>>```kotlin
+>>val numbers = generateSequence(0) {it + 1}
+>>println(numbers.take(5).toList())
+>>val numbers2 = generateSequence(BigInteger.ZERO){it+BigInteger.ONE}
+>>```
+>>
+>>위 방법의 경우 seed에 인자로 받아진 값을 첫 원소로 생성하고, nextFunction을 통해 seed를 변환하며 무한히 반복하여 원소를 생성한다. 
+>>
+>>숫자가 1씩 증가하는 등 단순한 규칙에 따라 원소가 존재하는 경우에 사용하며, `take()` 함수를 통해 원하는 지점까지의 값을 취해 sequence를 만들 수 있습니다.
+>
+>#### yield
+>
+>>```kotlin
+>>var numbers = sequence {
+>>    var x = 0
+>>    while (true){
+>>        yield (x++)
+>>    }
+>>}
+>>var mySequence = sequence {
+>>    yield(1)
+>>    yieldAll(3..5)
+>>    yieldAll(listOf(7, 9))
+>>}
+>>```
+>>
+>>yield 를 이용하는 방법의 경우 가장 자유도가 높게 sequence를 생성할 수 있다. `while`과 같이 사용하여 특정한 규칙에 따라 sequence를 만들 수 도 있고
+>>
+>>`yield(value)` , `yieldAll(list)` , `yieldAll(sequence)` 를 사용하여 원하는 원소를 자유롭게 추가할 수 있다.
 
+## Library functions
+
+>Chain calls 상황에서 퍼포먼스를 최적화 하는 방법은 Sequence를 사용하는 것 외에도 
+>
+>1) chain calls에 대응되는 1개의 함수 사용, 2) 연산 순서 변경 이 있다.
+>
+>#### chain calls에 대응 되는 1개의 함수 
+>
+>```kotlin
+>class Person(val age:Int, val isPublicProfile:Boolean, val name:String)
+>lateinit var people:ArrayList<Person>
+>// 아래 2줄은 동일한 연산을 수행한다. 
+>people.filter { it.age < 21 }.size
+>people.count { it.age < 21}
+>// 아래 2줄은 동일한 연산을 수행한다.
+>people.sortedBy { it.age }.reversed()
+>people.sortedByDescending { it.age }
+>// 아래 2줄은 동일한 연산을 수행한다.
+>people.map { person ->
+>    person.takeIf { it.isPublicProfile }?.name
+>}.filterNotNull()
+>people.mapNotNull { person ->
+>    person.takeIf {it.isPublicProfile}?.name
+>}
+>var map = mutableMapOf<Int, MutableList<Person>>()
+>// 아래 3줄은 동일한 연산을 수행한다.
+>for (person in people){
+>    if(person.age !in map){
+>        map[person.age] = mutableListOf()
+>    }
+>    map.getValue(person.age) += person
+>}
+>for (person in people){
+>    map.getOrPut(person.age) { mutableListOf() } += person
+>}
+>val map2 = people.groupBy { it.age }
+>```
+>
+>chain calls의 문제는 각 collection operation 함수마다 intermediate collection이 생성된다는 점이기 때문에 1개의 함수로 축약하여 사용하면 굳이 sequence를 생성할 필요가 없다.
+>
+>#### 연산 순서 변경
+>
+>```kotlin
+>fun m(i: Int): Int {
+>    print("m$i ")
+>    return i
+>}
+>fun f(i: Int): Boolean {
+>    print("f$i ")
+>    return i % 2 == 0
+>}
+>val list = listOf(1, 2, 3, 4)
+>// collection chain calls의 순서를 바꾼 경우
+>list.map(::m).filter(::f) // m1 m2 m3 m4 f1 f2 f3 f4 (8회)
+>list.filter(::f).map(::m) // f1 f2 f3 f4 m2 m4 (6회)
+>// sequence chain calls의 순서를 바꾼 경우
+>list.asSequence().map(::m).filter(::f).toList() 
+>// m1 f1 m2 f2 m3 f3 m4 f4 (8회)
+>list.asSequence().filter(::f).map(::m).toList() 
+>// f1 f2 m2 f3 f4 m4 (6회)
+>```
+>
+>코드 사례와 같이 원소를 줄여주는 연산을 먼저 진행하면 전체 연산의 수를 줄일 수 있다. 이는 
+>
+>collection/sequence 둘다에 해당된다. 
+>
+>하지만 이 경우에도 collection 연산은 여전히 intermediate collection을 생성한다는 문제가 있다.
+
+## Lambda with receiver
