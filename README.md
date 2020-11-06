@@ -913,6 +913,8 @@ Kotlin In Action 의 저자가 가르키는 코틀린 중급 문법 및 과제 ,
 
 >![image-20201106154456250](README.assets/image-20201106154456250.png)
 >
+>![image-20201106173652512](README.assets/image-20201106173652512.png)
+>
 >
 >
 >#### let **함수**
@@ -1004,6 +1006,158 @@ Kotlin In Action 의 저자가 가르키는 코틀린 중급 문법 및 과제 ,
 >>```
 >>
 >>takeif{}?.apply 에서 ? 를 꼭 사용해야한다.
+
+#### The power of inline
+
+>**Regular non-inlined lambda**
+>
+>>inline 키워드없이 정의된 일반적인 함수들은 lambda를 인자로 받고 이 lambda가 어떠한 변수라도 포함
 >>
+>>할 경우, lambda에 대응되는 익명 클래스 객체 (anonymous class object)를 생성하며 이는 퍼포먼스 오버
 >>
+>>헤드를 발생시킨다.
+>>
+>>즉 non-inline 형태로 `run` 함수를 정의한 경우, 그냥 코드 블록을 수행시키는 것에 비해, `run`함수를 통해
+>>
+>> 코드 블록 (lambda)을 수행시키는 것은 익명 클래스 생성에 따른 부가 비용으로 인해 퍼포먼스 측면에서
+>>
+>> 덜 효율적이다.
+>
+>**Inline functions**
+>
+>>어떤 함수를 `inline` 으로 선언하는 경우 그 함수의 본문이 inline 됩니다. 이 말의 뜻은 해당 함수를 호출하
+>>
+>>는 코드를 컴파일 할 때, 해당 함수를 호출하는 바이트 코드로 컴파일하는 것이 아니라 해당 함수 본문에 대
+>>
+>>한 바이트 코드로 컴파일한다는 뜻이다. 
+>>
+>>즉 `run` 함수를 `inline` 형태로 정의한 경우, 그냥 코드 블록을 수행시키는 것과, 
+>>
+>>`run`함수를 통해 코드 블록 (lambda)을 수행시키는 것은 바이트코드 레벨에서 동일하게 동작한다.
+>>
+>>```kotlin
+>>// 1. try-with-resource에 대한 Java 스타일 코드
+>>try{
+>>    val br = BufferedReader(FileReader(path))
+>>    return br.readLine()
+>>} catch (e: IOException){
+>>    throw e
+>>}
+>>// 2. use 인라인함수 사용 
+>>BufferedReader(FileReader(path)).use { br ->
+>>    return br.readLine()
+>>}
+>>```
+>>
+>>하지만 Kotlin은 이러한 동작을 하는 코드 블록을 `use` 라는 인라인 형태의 라이브러리 함수로 제공하여 
+>>
+>>퍼포먼스 오버헤드 없이 간결하게 작성할 수 있다.
+>
+>**Inline functions의 Java 상호운용성**
+>
+>>컴파일 과정에서 인라이닝은 Kotlin 컴파일러가 하는 것이기 때문에, Java 코드에서 Kotlin 의 인라인 함수를 사용할 경우 사용은 가능하지만 컴파일시 인라이닝 처리는 동작하지 않는다.
+>>
+>>이에 따라 대부분의 인라인 라이브러리 함수는 `@InlineOnly` 어노테이션이 포함되어 있는데 이는 오직 인라인으로만 사용할 수 있다는 뜻으로, Java 코드에서 해당 인라인 함수에 접근할 수 없도록 (=Kotlin에서만 해당 함수를 사용할 수 있도록) 가시성을 제어하는 어노테이션이다.
+>
+>#### Inline or not inline?
+>
+>>일반적인 non-inline 함수 호출 방식은 JVM이 바이트코드를 Just-in-time 컴파일하는 과정에서 최적화가 지원된다. 
+>>
+>>그에 비해 `inline` 함수는 바이트코드에 함수 본문이 그대로 복사되기 때문에 JVM 최적화가 불가능하며 코드 중복이 발생한다.
+>>
+>>Lambda를 인자로 받는 경우에는 익명 클래스 객체가 생성되는 명백한 퍼포먼스 오버헤드가 있으므로 `inline` 함수를 사용하는 것이 이점을 줄 수 있다. 
+>>
+>>(현재의 JVM은 함수 호출과 람다를 인라이닝해줄 정도로 똑똑하지는 못하기 때문이다.)
+>>
+>>이에 따라, Lambda (ex: `run`의 경우 code block, `filter`의 경우 predicate, `map`의 경우 transform 등)를 인자로 받는 코드 사이즈가 작은 로직 중 높은 빈도로 재사용되는 경우 (ex: `run`, `let`, `takeif`, `takeUnless`, `repeat`, `filter`, `map` 등)만 `inline` 함수로 정의하는게 퍼포먼스 측면에서 유용하며, 그외의 경우는 대부분 그냥 일반 함수로 정의하여 재사용하는 것이 낫다.
+
+## Collections vs Sequences
+
+>Collections에 대해 정의된 lambda를 인자로 받는 확장함수들 ex: `filter()`, `map()`, `find()`, `groupBy()` 은 앞서 배운 것처럼 `inline` 함수로 정의되어 익명 클래스 객체 생성 측면에 대해서는 퍼포먼스 오버헤드 걱정없이 자유롭게 사용할 수 있다.
+>
+>하지만, Collections 확장함수의 경우 퍼포먼스 측면에서 한가지 문제가 있는데 각 확장함수를 호출할 때마다 새로운 Collection이 생성되어 반환된다는 점이다.
+>
+>```kotlin
+>val list = listOf(1, 2, -3)   // [1, 2, -3] 생성
+>val maxOddSquare = list
+>    .map { it * it }          // [1, 4, 9] 생성
+>    .filter { it % 2 == 1 }   // [1, 9] 생성
+>    .max()
+>
+>//sequence 사용
+>val list = listOf(1, 2, -3)   // [1, 2, -3] 생성
+>val maxOddSquare = list
+>    .asSequence()
+>    .map { it * it }
+>    .filter { it % 2 == 1 }
+>    .max()
+>```
+>
+>val list` 를 초기화할 때, `map()` 연산이 수행될 때, `filter()` 연산이 수행될 때 총 3개의 **intermediate collection**이 생성된다. 
+>
+>원하는 최종 결과물을 위해 불필요한 중간 결과물이 생성된다는 비효율성이 존재한다.
+>
+>1개의 연산만을 진행할 경우 바로 최종 결과물에 도달하므로 문제가 없지만 chain calls 연산을 진행하는 경우 유의미한 퍼포먼스 오버헤드가 생길 수 있다.
+>
+>한편 Collection 을 다룰 때는 1개의 함수로 처리하기 보다는 다양한 확장함수를 이용한 chain calls 패턴이 대부분이기 때문에 이 이슈가 중요할 수 있으며 이 문제를 피하는 한가지 방법이 **Sequence**이다.
+>
+>Kotlin의 sequence는 Java8의 stream에 대응되는 개념으로 lazy evaluation 으로 처리된다는 공통점이 있다. Collection은 연산에 대해 eager evaluation으로 처리하지만, sequence는 연산에 대해 lazy evaluation으로 처리한다.
+>
+>sequence를 사용하게 되면 결과가 필요한 시점에만 연산을 수행 (lazy evaluation)하여 최종 결과만을 반환한다. 이 방식을 통해 chain calls에 대한 퍼포먼스 오버헤드를 막을 수 있다.
+
+#### More about sequences
+
+>n개의 원소를 가진 collection/sequence에 대해`map()`-> `find()` 순서로 chain calls가 발생한다고 할 때, collection의 경우 n개의 원소 전부에 대해 `map()` transform을 한뒤에 `find()` 로 조건에 맞는 첫번째 원소를 찾는다. (**horizontal evaluation**)
+>
+>seqeunce의 경우 맨 앞 인덱스 부터 하나씩 `map()` transform을 하고 `find()` 로 조건이 맞는지 확인하며 조건이 맞는 원소가 발견되면 연산을 종료한다. (**vertical evaluation**)
+>
+>```kotlin
+>fun m(i: Int): Int {
+>    print("m$i ")
+>    return i
+>}
+>fun f(i: Int): Boolean {
+>    print("f$i ")
+>    return i % 2 == 0
+>}
+>val list = listOf(1, 2, 3, 4)
+>// 1. Collection (m1 m2 m3 m4 f1 f2 f3 f4)
+>list.map(::m).filter(::f)
+>// 2. Sequence (m1 f1 m2 f2 m3 f3 m4 f4)
+>list.asSequence().map(::m).filter(::f).toList()
+>// 3. Sequence - terminal operation이 없는 경우 (nothing is printed)
+>list.asSequence().map(::m).filter(::f)
+>```
+>
+>Seqeunce의 경우 Seqeunce가 아닌 다른 타입 (ex: collection, value as an element, boolean 등)을 반환하는 **terminal operation**이 수행되기 전까지는 아예 연산이 실행되지 않음을 확인할 수 있다.
+
+## Creating sequences
+
+>Eager -> lazy 변경을 쉽게 하기 위해 Collection/Seqeunce에 대한 확장함수들은 대부분 매칭된다. 기존 Collection에 대한 chain calls 앞에 `asSequence()` 만 붙여주면 된다.
+>
+>한편, Sequence에 대한 확장함수들은 **intermediate operation** (반환 타입이 sequence인 연산)과 **terminal operation** (반환 타입이 sequence가 아닌 연산)으로 나뉩니다.
+>
+>```kotlin
+>// Sequence의 first() : terminal operation (inline함수로 정의됨)
+>public inline fun <T> Sequence<T>.first(predicate:(T)->Boolean): T {
+>    for (element in this) if (predicate(element)) return element
+>    throw NoSuchElementException("Sequence contains no element matching the predicate.")
+>}
+>// Sequence의 filter() : intermediate operation 
+>public fun <T> Sequence<T>.filter(predicate: (T) -> Boolean): Sequence<T> {
+>    return FilteringSequence(this, true, predicate)
+>}
+>```
+>
+>**Terminal operation** (ex: `first()`)은 즉각적으로 lambda를 호출하여 연산을 수행하므로 Collection에 대응되는 연산들과 동일하게 `inline` 함수로 정의되어 있다. 한편, intermediate operation (ex: `filter()`)의 경우 즉각적으로 lambda를 호출하여 연산을 수행하는 것이 아니라, 추후에 연산을 수행하기 위해 lambda를 저장해두므로 `inline` 함수로 정의되지 않는다.
+>
+>collection으로 부터 `asSequence()` 를 통해 sequence를 생성하는 방법 외에 sequence를 직접 생성하는 방법
+>
+> 1) `generateSequence(nextFunction: () -> T?)`
+>
+> 2) `generateSequence(seed: T?, nextFunction: () -> T?)`
+>
+> 3) `yield` 
+>
+>
 
