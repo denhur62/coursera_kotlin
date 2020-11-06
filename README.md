@@ -909,3 +909,101 @@ Kotlin In Action 의 저자가 가르키는 코틀린 중급 문법 및 과제 ,
 >
 >data class의 경우 이 `component()` 메소드를 자동으로 생성하기 때문에 destruction declaration을 사용할 수 있다. 한편, destruction declaration 문법을 사용할 때 호출하지 않는 변수는 `_` 선언을 통해 사용되지 않음을 명시화할 수 있다.
 
+#### inline function
+
+>![image-20201106154456250](README.assets/image-20201106154456250.png)
+>
+>
+>
+>#### let **함수**
+>
+>>`.let { ... }` 형태의 사용 방식은 함수 인자 (argument)로 사용되는 변수에 대한 null 체크 때에도 사용할 수 있다. 
+>>
+>>즉 지정된 값이  null이 아닌 경우에 코드를 실행하는 경우이다.
+>>
+>>```kotlin
+>>// 명시적으로 null 체크하고 함수 인자로 사용하는 방식
+>>val str = getStr()
+>>if (str != null){
+>>    function1(str)
+>>    function2(str)
+>>}// ?.let{ ... }을 통해 null 체크하고 함수 인자로 사용하는 방식 
+>>getStr()?.let{
+>>    function1(it)
+>>    function2(it)
+>>}
+>>```
+>>
+>>앞에서 배운 인터페이스 smart cast가 안되서 지역변수에 할당하고 형 체크 하는 방식을 인라인 함수로 간결하게 나타낼 수 있다. 
+>>
+>>```kotlin
+>>interface User { val nickname: String }
+>>interface Session { val user: User }
+>>class FacebookUser(val accountId: Int) : User {
+>>    override val nickname = getFacebookName(accountId)
+>>    fun getFacebookName(accountId: Int):String = TODO()
+>>}
+>>class SubscribingUser(val email: String) : User {
+>>    override val nickname: String
+>>        get() = email.substringBefore('@')
+>>}// 1. as?를 통한 타입 체크
+>>// 멤버 접근시에만 사용 가능
+>>(session.user as? FacebookUser)?.accountId// 2. 명시적 타입 체크 (is)
+>>// 인터페이스 프로퍼티의 경우 open or custom getter 이슈 
+>>// 때문에 smart cast가 되지 않아서 3번 처럼 사용해야함.
+>>if(session.user is FacebookUser){ println(session.user.accountId) }// 3. 인터페이스 프로퍼티 타입 체크를 위한 변수 할당
+>>val user = session.user
+>>if(user is FacebookUser) { println(user.accounId) }// 4. let을 사용한 변수 할당 없는 인터페이스 프로퍼티 타입 체크
+>>(session.user as? FacebookUser)?.let{ println(it.accountId) }
+>>```
+>
+>#### takeUnless , takeif
+>
+>>간단한  takeIf, takeUnless 구문이다. 
+>>
+>>```kotlin
+>>// 원본 코드
+>>if (status) { doThis() }// 수정 된 코드
+>>takeIf { status }?.apply { doThis() }
+>>```
+>>
+>>하지만 위에 식은 극단적인 표현이기도 하며 확장함수의 의미를 살리지 못한다.
+>>
+>>takeIf 의 조건 함수 predicate 는 파라미터로 T 객체를 전달 받는다.
+>>
+>>takeIf 의 조건 함수 predicate 의 결과에 따라 T 객체 인 자기 자신 (this) 이나 null 을 반환한다.
+>>
+>>```kotlin
+>>public inline fun <T> T.takeUnless(predicate: (T) -> Boolean): T? 
+>>    = if (!predicate(this)) this else null
+>>```
+>>
+>>```kotlin
+>>// 원본 코드
+>>if (someObject != null && someObject.status) {
+>>   doThis()
+>>}
+>>// 나아진 코드
+>>if (someObject?.status == true) {
+>>   doThis()
+>>}
+>>// 개선 된 코드
+>>someObject?.takeIf{ it.status }?.apply{ doThis() }
+>>```
+>>
+>> takeIf 함수가 조건이 만족하지 않으면 null 을 반환하는 특성을 이용하여 어떤 데이터를 반환 하거나 
+>>
+>>엘비스 연산자 (?:) 를 사용해서 함수를 종료하는 방법으로 사용할수도 있다.
+>>
+>>```kotlin
+>>// takeIf 의 조건이 만족되지 않으면 에러를 던집니다.
+>>val index 
+>>   = input.indexOf(keyword).takeIf { it >= 0 } ?: error("Error")// takeIf 의 조건이 만족되지 않으면 return 하여 종료 합니다.
+>>val outFile 
+>>   = File(outputDir.path).takeIf { it.exists() } ?: return false
+>>```
+>>
+>>takeif{}?.apply 에서 ? 를 꼭 사용해야한다.
+>>
+>>
+
