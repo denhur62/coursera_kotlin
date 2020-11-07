@@ -1,8 +1,6 @@
 coursera_kotlin
 
-Kotlin In Action 의 저자가 가르키는 코틀린 중급 문법 및 과제 , 실습을 다룬다.
-
-
+Kotlin In Action 의 저자가 가르키는 코틀린 중급 문법 및 실습에 대한 내용을 정리 하였다.
 
 ### Functions
 
@@ -1387,10 +1385,237 @@ Kotlin In Action 의 저자가 가르키는 코틀린 중급 문법 및 과제 ,
 >
 >(ex: 정수의 경우 `Int`, `Int?` 중에서 선택 필요)  
 >
->런타임 NPE 이슈와 연관된 Nullability는 개발자가 직접 명시적으로 구분하도록 하고, nullable 타입에 대해 null operator를 제공하여 안전성을 개선
+>런타임 NPE 이슈와 연관된 Nullability는 개발자가 직접 명시적으로 구분하도록 하고, nullable 타입에 대해 null operator를 제공하여 안전성을 개선하고자 하였다.
+>
+>#### replaceALL
+>
+>>자바에서는 문자열 치환이라고 느낄것이다. String변수나 배열 같은곳에 많은 양의 데이터들이 들어가 있는 경우 자신이 바꾸고자 하는 경우에 사용한다. 
+>>
+>>Replace 와 replaceALL의 차이점은 Replace는 함수는 자신이 바꾸고 싶은 문자로 문자열으 치환하는 기능을 하지만 ReplaceALL은 첫번째 값으로 바꿀 문자열을 입력받는 대신 첫번째 인자 값으로 정규식이 들어간다.**따라서** Replace는 특수문자로도 치환이 되지만 ReplaceALL은 특수문자로 치환이 어렵다.
+>>
+>>![image-20201107163922469](README.assets/image-20201107163922469.png)
+>
+>#### regular expression
+>
+>>자바의 이런 혼동을 줄이고자 코틀린에서는 regular expression을 사용하여 혼동의 여지가 있던 replaceALL()을 숨기고 String 타입과 Regex 타입에 대한 오버로딩한 replace() 함수를 제공한다.
+>>
+>>```kotlin
+>>// Java의 replaceAll() 함수
+>>// 인자로 String 타입을 받지만 regular expression으로 쓰임 
+>>public String replaceAll(String regex, String replacement) {
+>>    return Pattern.compile(regex).matcher(this).replaceAll(replacement);
+>>}
+>>// Kotlin의 replace() 함수
+>>// 인자의 타입이 String인 경우와 Regex인 경우로 오버로딩됨  @kotlin.internal.InlineOnly
+>>public inline fun CharSequence.replace(regex: Regex, replacement: String): String = regex.replace(this, replacement)
+>>expect fun String.replace(oldValue: String, newValue: String, ignoreCase: Boolean = false): String
+>>```
+>
+>#### Any, Object
+>
+>>Java에서는 `java.lang.Object` 가 reference type만의 최상위 타입이었으나
+>>
+>>primitive/reference type의 구분이 없는 Kotlin에서 `Any` 는 모든 타입의 최상위 타입으로 동작한다.
+>>
+>>이 역시 컴파일 단계에서 적절히 변환된다.
 
 #### Kotlin type hierarchy
 
+>함수의 반환값이 없는 경우에 대해 Java에서는 `Void` 타입 1개로만 명시가 가능하다. 
+>
+>하지만, 실질적인 프로그래밍 관점에서 생각해보면 함수의 반환값이 없는 경우는 
+>
+>1) 함수 자체는 정상적으로 완료 되었으나 반환할만한 의미있는 정보가 없어 반환값이 없는 경우와
+>
+>2) 함수 자체가 정상적으로 완료되지 못하여 정보를 반환할 수 없는 경우로 나뉩니다. 
+>
+>이러한 경우를 구분하기 위해 Kotlin에서는`Unit` 과 `Nothing` 이라는 2개의 타입을 제공한다.
+>
+>#### Unit
+>
+>>```kotlin
+>>// 함수 반환 타입 명시 생략 (가장 일반적인 방식)
+>>fun unit1(){
+>>    println("unit")
+>>}// 함수 반환 타입으로 Unit 명시 
+>>fun unit2():Unit{
+>>    println("unit2")
+>>}// return Unit 명시 
+>>fun unit3():Unit{
+>>    println("unit3")
+>>    return Unit
+>>}
+>>```
+>>
+>>`Unit` 타입의 경우 `return` 을 생략할 수 있고, 함수 반환 타입 명시를 생략할 수 있다. 
+>>
+>>(expression body의 경우 함수 반환 타입 생략이 가능하지만 block body 방식의 경우 함수 반환 타입 명시는 의무적인데  `Unit` 타입에 대해서만 생략이 가능하다.)
+>
+>#### **Nothing**
+>
+>>예시 상황은 오직 예외를 던지는 함수, `TODO()`로 선언되어 구현이 되지 않은 함수, 무한 루프를 발생시키는 함수 등이다. 비정상적으로 종료되거나 절대 종료되지 않는 경우를 의미한다.
+>>
+>>```kotlin
+>>fun fail(message:String): Nothing{
+>>    throw IllegalStateException(message)
+>>}
+>>```
+>>
+>>함수가 반환값을 가지지 않을 수 도 있는 Java와 달리 Kotlin은 함수형 프로그래밍의 영향을 받아 모든 함수가 반환값을 가지는 구조입니다.
+>>
+>>그리고 `Unit` 타입은 `Int`, `User` (custom class) 등에 대응되는 **독립적인 타입**이고, 
+>>
+>>`Nothing` 타입은 모든 타입의 subtype으로 정의됩니다.
+>>
+>>```kotlin
+>>// fail 함수의 반환값을 Unit으로 명시하는 경우 
+>>// answer 변수는 Int 또는 Unit이 할당될 수 있어 
+>>// 독립적인 타입들을 포괄하기 위해 Any 타입으로 명시되야 합니다. 
+>>// 그러나 이는 answer을 효율적으로 조작하기에 방해가 되며, 
+>>// answer은 오직 Int 타입만 저장되고 
+>>// Int 타입이 저장되지 않는 경우는 예외 발생으로 비정상 상태인 것이므로
+>>// 의미적으로도 부적합합니다.
+>>val answer: Any = if (timeHasPassed()) {
+>>        42
+>>    } else {
+>>        fail("No answer yet")
+>>    }
+>>}
+>>
+>>fun fail(message:String): Unit{
+>>    throw IllegalStateException(message)
+>>}
+>>============================
+>>// fail 함수의 반환값을 Nothing으로 명시하는 경우
+>>// Nothing은 모든 타입의 subtype이기 때문에 
+>>// answer를 Int 타입으로 명시할 수 있습니다. 
+>>val answer: Int = if (timeHasPassed()) {
+>>        42
+>>    } else {
+>>        fail("No answer yet")
+>>    }
+>>}
+>>
+>>fun fail(message:String): Nothing{
+>>    throw IllegalStateException(message)
+>>}
+>>```
+>>
+>>**Type Hierarchy**
+>>
+>>>`Any` 타입은 모든 타입의 super type (top type) 이다.
+>>>
+>>>`Nothing` 타입은 모든 타입의 subtype (bottom type) 이다.
+>>>
+>>>한편 모든 타입에 대해 nullable 타입 (`A?`)은 non-null 타입(`B?`)의 super type 입니다. 이에 따라 Kotlin의 최상위 super type은 `Any?` 이다.
+>>
+>>#### Nullable Types
+>>
+>>>Kotlin의 nullable / non-nullable 구분은 바이트코드 레벨에서는 어노테이션을 이용하는 방식으로 구현되므로 Java 코드에서도 `@Nullable` , `@NotNull` 어노테이션을 선언해줄 경우 Nullability 여부가 명시되어 문제가 없다. 
+>>>
+>>>하지만 명시가 없는 경우가 대부분이며 이에 대한 가능한 대응 방안은 크게 
+>>>
+>>>1) 안전성을 위해 일괄 nullable 타입으로 해석하고 null operator 사용을 강제한다, 
+>>>
+>>>2) Nullability 여부를 알 수 없음이라는 정의를 가지는 제3의 타입을 사용한다. 로 2가지인데 Kotlin은 2) 방식을 선택하였다.
+>>>
+>>>**Platform Type**
+>>>
+>>>>“type that came from Java type of unkown nullability” 를 의미한다.
+>>>>
+>>>>앞서 언급한 것처럼 안전성 측면에서는 일괄 nullable type으로 처리하여 null operation 사용을 강제하는 것이 런타임 NullPointerException을 막을 수 있어 안전할 수 있고, Kotlin 개발팀도 처음에는 이러한 접근법을 취하고자 했으나 이 경우 사실 null을 반환할 가능성이 없는 함수임에도 무조건 null operation 사용이 강제되어 코드 가독성이 떨어지는 문제와 추후 설명할 Generic 타입 이슈 (unknown mutability) 처리를 위해서도 제 3의 타입 정의가 필요하여 platfrom type을 도입하였다.
+>>>>
+>>>>Nullable type을 `A?` 로 선언하듯이, platform type은 `A!` 로 선언된다. 하지만 이는 syntax가 아니라 notation으로 실제 코딩시에는 사용되지 않고 에러, 경고 메시지 등에만 노출된다.
+>>>
+>>>
+>
+>#### 자바 equals 와 == , 코틀린 ==(equals),=== 비교하기
+>
+>>Java에서는 아래와 같이 비교한다.
+>>
+>>- equals : 값이 동일한지 체크한다.
+>>- == : 메모리상 동일한 객체인지 체크한다.
+>>
+>>kotlin에서는 아래와 같이 비교한다.
+>>
+>>- == : 값이 동일한지 체크한다.
+>>- === : 메모리상 동일한지 체크한다.
+>>
+>>```kotlin
+>>@Test
+>>fun stringMemory() {
+>>    val somethingItemOne = SomethingResponse(
+>>        name = "name",
+>>        age = 50,
+>>        isSelected = false
+>>    )
+>>    val somethingItemTwo = SomethingResponse(
+>>        name = "name",
+>>        age = 50,
+>>        isSelected = false
+>>    )
+>>
+>>    println("somethingItemOne == somethingItemTwo ${somethingItemOne == somethingItemTwo}")
+>>    println("somethingItemOne === somethingItemTwo ${somethingItemOne === somethingItemTwo}")
+>>    println("somethingItemOne hashCode ${somethingItemOne.hashCode()}")
+>>    println("somethingItemTwo hashCode ${somethingItemTwo.hashCode()}")
+>>}
+>>//somethingItemOne == somethingItemTwo true
+>>//somethingItemOne === somethingItemTwo false
+>>//somethingItemOne hashCode -1052833319
+>>//somethingItemTwo hashCode -1052833319
+>>```
+>>
+>>data class의 equals(==)는 true이고, 메모리 비교(===)는 false이다.
+>>
+>>#### 원시타입 비교
+>>
+>>>```kotlin
+>>>companion object {
+>>>    private const val TYPE_NAME = "name"
+>>>}
+>>>
+>>>enum class Type(val type: String) {
+>>>    NAME("name")
+>>>}
+>>>
+>>>@Test
+>>>fun stringMemory() {
+>>>    val somethingItemOne = SomethingResponse(
+>>>        name = "name",
+>>>        age = 50,
+>>>        isSelected = false
+>>>    )
+>>>
+>>>    println("somethingItemTwo.name == TYPE_NAME ${somethingItemOne.name == TYPE_NAME}")
+>>>    println("somethingItemTwo.name === TYPE_NAME ${somethingItemOne.name === TYPE_NAME}")
+>>>    println("somethingItemOne.name.hashCode() ${somethingItemOne.name.hashCode()}")
+>>>    println("TYPE_NAME.hashCode() ${TYPE_NAME.hashCode()}")
+>>>    println("Type.NAME.type.hashCode() ${Type.NAME.type.hashCode()}")
+>>>}
+>>>//somethingItemTwo.name == TYPE_NAME true
+>>>//somethingItemTwo.name === TYPE_NAME true
+>>>//somethingItemOne.name.hashCode() 3373707
+>>>//TYPE_NAME.hashCode() 3373707
+>>>//Type.NAME.type.hashCode() 3373707
+>>>```
+>>>
+>>>원시 타입인 String을 비교한 결과는 모두 true를 return 한다. 추가로 enum으로 정의한 String에 대해서도 동일하다.
+>>
+>>#### 데이터 클래스가 아닌 경우
+>>
+>>>모든 class는 equals 정의를 별도로 하지 않으면 아래 Java 코드에 따라 기본 동작한다. 기본 동작이 Java 메모리 비교라 비교 시 false가 리턴된다.
+>>>
+>>>```java
+>>>public boolean equals(Object var1) {
+>>>    return this == var1;
+>>>}
+>>>```
+>>>
+>>> 따라서 equals와 hashCode 정의가 없는 2 객체의 equals 결과는 false이고, 메모리는 이것과 무관하게 다를 테니 false이다. equals가 다르니 hashCode 역시 false가 리턴된다.
+>>>
+>>>원시 타입(Primitive type)의 결과는 같게 나오게 된다.
+>
 >
 >
 >
