@@ -1270,4 +1270,127 @@ Kotlin In Action 의 저자가 가르키는 코틀린 중급 문법 및 과제 ,
 >
 >하지만 이 경우에도 collection 연산은 여전히 intermediate collection을 생성한다는 문제가 있다.
 
-## Lambda with receiver
+#### Function literal with receiver
+
+>리터럴(Literal)은 다음과 같이 소스 코드 수준에서의 최소화된 값의 표기(notation)이라고 말할 수 있다.
+>
+>```kotlin
+>1
+>"cat"
+>{"cat", "dog"}
+>{name: "cat", length: 57}
+>```
+>
+>함수 리터럴(Function literal)은 코틀린에서 람다와 익명함수를 일컷는다.
+>
+>Receiver는 말 그대로 메세지 수신자에 해당한다. 즉, 해당 메소드를 가지는 인스턴스로 이해하면 된다.
+>
+>```kotlin
+>// lambda with receiver
+>val sum: Int.(Int) -> Int = { other -> plus(other) }
+>// function type with receiver
+>val sum = fun Int.(other: Int): Int = this + other
+>```
+>
+>리시버를 포함하고 있는 람다(`A.(B) -> C`) 또는 익명 함수 형식(`fun T.(param: P) : R`)을 뜻한다는 것을 이해할 수 있다.
+>
+>```kotlin
+>fun main(args: Array<String>) {
+>    100.pluu {
+>        print(it)
+>    }    100.pluu2 {
+>        print(this)
+>    }
+>}fun Int.pluu(block: (it: Int) -> Unit) = block(this)
+>fun Int.pluu2(block: Int.() -> Unit) = block()
+>```
+>
+>위의 코드는 Function literal , Funcion literal with Receiver 를 나타낸다.
+>
+>위의 코드를 자바로 디컴파일하면 즉 extension은 정적 메소드로 컴파일 된다. 
+>
+>간략하게 이야기하자면, `this` 사용 유무를 가장 중요한 기준으로 사용한다는 뜻이다.
+>
+>`this`를 사용할 수 있다는 것은 람다 자체를 넘기는 것만으로도 객체에 대한 컨텍스트는 자연스럽게 유지되지만, 반대로 `this`를 사용할 수 없음은 객체에 대한 레퍼런스를 유지하기 위해 이를 직접 매개 변수로 넘기는 형태의 코드 구현이 필요하다는 사실을 기억해야 합니다.
+
+#### Lambda with receiver
+
+>Lambda with receiver (extension lambda 라고도 함)는 확장함수와 lambda가 결합된 개념으로 일반 lambda에 대한 일반 함수 -> 확장 함수의 관점으로 볼 수 있고, 
+>
+>확장 함수에 대한 일반 함수 -> 일반 lambda의 관점으로 볼 수 있습니다.
+>
+>일반 함수는 호출시에 객체를 Argument로 받지만 확장 함수는 호출시에 객체를 Receiver로 받는다.
+>
+>마찬가지로 일반 lambda는 호출시에 객체를 Argument로 받지만 (`block : (T) -> R`), Lambda with Receiver는 호출시에 객체를 Receiver로 받는다. (`block : T.() -> R`)
+>
+>일반 함수는 특정한 로직을 재사용한 단위의 목적으로 사용된다면, 일반 lambda는 함수를 인자로 사용하기 위한 목적으로 주로 사용된다. 
+>
+>(ex: `filter`의 경우 predicate, `map`의 경우 transform 로직을 인자로 사용하기 위해 lambda 사용) 
+>
+>확장 함수도 마찬가지로 Receiver에 대한 특정한 로직을 재사용하기 위해 사용하고 
+>
+>(ex : `fun String.lastChar() = this.get(this.length — 1)` ), lambda with receiver는 함수를 인자로 사용하기 위해 사용됩니다.
+>
+> (ex: `val str = buildString { this.append("...") }` 에서 lambda with receiver는 특정한 로직을 거친 후 String을 반환하는 `buildString()` 함수에 대한 인자로 사용됨)
+>
+>let,also는 객체를 인자로 여러번 사용하는 로직 에 사용되며 apply, run 은 객의 멤버에 여러번 접근하는 로직을 사용할때 사용한다. 유일하게 with만 safe access를 사용하지 않는다.  
+
+#### Member extensions 실습 코드 작성시 고려할 점
+
+>클래스 내부에 멤버 함수 형태로 다른 클래스 타입에 대한 확장함수를 정의한 경우, 해당 확장함수는 다음 3가지 경우에만 접근 가능한 가시성이 제어된 확장함수로 사용할 수 있다. 
+>
+>1) 클래스 내부 다른 멤버가 사용할 수 있는 확장함수,
+>
+>2) 클래스에 대한 다른 확장함수 정의시에 사용할 수 있는 확장함수,
+>
+>3) `with` 함수 등과 함께 사용시 접근 가능합니다.
+>
+>```kotlin
+>class Words {
+>    private val list = mutableListOf<String>()
+>
+>    fun String.record(){
+>        list+=this
+>    }
+>    operator fun String.unaryPlus(){
+>        record()
+>    }
+>
+>    override fun toString() = list.toString()
+>}
+>fun Words.foo(){
+>    "first".record()
+>}
+>fun main(args: Array<String>) {
+>    val words = Words()
+>    with(words) {
+>        // The following two lines should compile:
+>        "one".record()
+>        +"two"
+>    }
+>    words.toString() eq "[one, two]"
+>}
+>
+>```
+
+#### Basic types
+
+>Java에서는 개발자가 integer, boolean 등을 할당하는 변수를 선언할 때 목적에 맞게 primitive type과 reference type 중에서 선택해야했다. 
+>
+>하지만 Kotlin에서는 이러한 구분이 존재하지 않으며, Kotlin 컴파일러가 컴파일하는 과정에서 코드에 적절한 것으로 변환한다. 
+>
+>(ex: nullable Int인 `Int?` 는 `java.lang.Integer`로 변환, generic argument 로서 Int인 `List<Int>` 는 `List<java.lang.Integer>`로 변환, 함수 인자 타입을 `Any`로 선언하고 정수를 넣는 경우 autoboxing에 의해 일괄 `java.lang.Integer` 로 변환 등)
+>
+>동일한 종류의 자료형에 대해 primitive type과 reference type이 존재하는 int, boolean, double 등의 경우 둘 중 어떤 것을 선택해야하는지 유스케이스가 명확하므로 이를 컴파일러 레벨에서 처리하여 편의성을 개선
+>
+>Kotlin에서는 타입을 명시하는 경우 nullability 명시를 강제한다. 
+>
+>(ex: 정수의 경우 `Int`, `Int?` 중에서 선택 필요)  
+>
+>런타임 NPE 이슈와 연관된 Nullability는 개발자가 직접 명시적으로 구분하도록 하고, nullable 타입에 대해 null operator를 제공하여 안전성을 개선
+
+#### Kotlin type hierarchy
+
+>
+>
+>
